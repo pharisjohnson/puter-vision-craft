@@ -85,6 +85,13 @@ export const OCRScanner = () => {
     setExtractedText("");
   };
 
+  const fileToDataURL = (file: File) => new Promise<string>((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result as string);
+    reader.onerror = () => reject(new Error("Failed to read file"));
+    reader.readAsDataURL(file);
+  });
+
   const extractText = async () => {
     if (!imageFile && !imageUrl) {
       toast.error("Please upload an image or enter an image URL");
@@ -100,17 +107,28 @@ export const OCRScanner = () => {
     console.log("Starting OCR extraction...", { hasFile: !!imageFile, hasUrl: !!imageUrl });
     
     try {
-      const input = imageFile || imageUrl;
-      console.log("Calling puter.ai.img2txt with:", input);
-      
-      const text = await window.puter.ai.img2txt(input);
-      
+      let text = "";
+      if (imageFile) {
+        try {
+          console.log("Attempting OCR with File object");
+          text = await window.puter.ai.img2txt(imageFile);
+        } catch (err1) {
+          console.warn("Direct File OCR failed, retrying with Data URL...", err1);
+          const dataUrl = await fileToDataURL(imageFile);
+          text = await window.puter.ai.img2txt(dataUrl);
+        }
+      } else {
+        const url = imageUrl.trim();
+        console.log("Attempting OCR with URL", url);
+        text = await window.puter.ai.img2txt(url);
+      }
+
       console.log("OCR result:", text);
       setExtractedText(text || "No text found in image");
       toast.success("Text extracted successfully!");
     } catch (error) {
-      console.error("OCR Error details:", error);
-      const errorMessage = error instanceof Error ? error.message : "Unknown error occurred";
+      console.error("OCR Error details (after retries):", error);
+      const errorMessage = typeof error === "string" ? error : (error instanceof Error ? error.message : JSON.stringify(error));
       toast.error(`Failed to extract text: ${errorMessage}`);
     } finally {
       setIsProcessing(false);
