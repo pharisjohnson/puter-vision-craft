@@ -1,9 +1,10 @@
-import { useState, useCallback } from "react";
-import { Upload, Link as LinkIcon, Copy, CheckCheck, Loader2, X } from "lucide-react";
+import { useState, useCallback, useEffect } from "react";
+import { Upload, Link as LinkIcon, Copy, CheckCheck, Loader2, X, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
 import { toast } from "sonner";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 declare global {
   interface Window {
@@ -23,6 +24,21 @@ export const OCRScanner = () => {
   const [isProcessing, setIsProcessing] = useState(false);
   const [copied, setCopied] = useState(false);
   const [dragActive, setDragActive] = useState(false);
+  const [puterLoaded, setPuterLoaded] = useState(false);
+
+  useEffect(() => {
+    // Check if puter is loaded
+    const checkPuter = () => {
+      if (window.puter && window.puter.ai) {
+        console.log("Puter.js loaded successfully");
+        setPuterLoaded(true);
+      } else {
+        console.log("Waiting for Puter.js to load...");
+        setTimeout(checkPuter, 100);
+      }
+    };
+    checkPuter();
+  }, []);
 
   const handleDrag = useCallback((e: React.DragEvent) => {
     e.preventDefault();
@@ -75,15 +91,27 @@ export const OCRScanner = () => {
       return;
     }
 
+    if (!puterLoaded || !window.puter || !window.puter.ai) {
+      toast.error("OCR service is still loading. Please wait a moment and try again.");
+      return;
+    }
+
     setIsProcessing(true);
+    console.log("Starting OCR extraction...", { hasFile: !!imageFile, hasUrl: !!imageUrl });
+    
     try {
       const input = imageFile || imageUrl;
+      console.log("Calling puter.ai.img2txt with:", input);
+      
       const text = await window.puter.ai.img2txt(input);
+      
+      console.log("OCR result:", text);
       setExtractedText(text || "No text found in image");
       toast.success("Text extracted successfully!");
     } catch (error) {
-      console.error("OCR Error:", error);
-      toast.error("Failed to extract text. Please try again.");
+      console.error("OCR Error details:", error);
+      const errorMessage = error instanceof Error ? error.message : "Unknown error occurred";
+      toast.error(`Failed to extract text: ${errorMessage}`);
     } finally {
       setIsProcessing(false);
     }
@@ -105,6 +133,15 @@ export const OCRScanner = () => {
 
   return (
     <div className="space-y-6">
+      {!puterLoaded && (
+        <Alert>
+          <AlertCircle className="h-4 w-4" />
+          <AlertDescription>
+            Loading OCR service... Please wait a moment.
+          </AlertDescription>
+        </Alert>
+      )}
+      
       <Card className="shadow-elegant border-border/50">
         <CardContent className="p-6">
           <div className="space-y-4">
@@ -181,7 +218,7 @@ export const OCRScanner = () => {
             </div>
             <Button
               onClick={extractText}
-              disabled={isProcessing}
+              disabled={isProcessing || !puterLoaded}
               className="w-full mt-4 gradient-primary shadow-glow"
               size="lg"
             >
