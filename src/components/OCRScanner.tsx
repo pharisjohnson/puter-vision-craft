@@ -151,14 +151,13 @@ export const OCRScanner = () => {
 
   return (
     <div className="space-y-6">
-      {!puterLoaded && (
-        <Alert>
-          <AlertCircle className="h-4 w-4" />
-          <AlertDescription>
-            Loading OCR service... Please wait a moment.
-          </AlertDescription>
-        </Alert>
-      )}
+      <Alert className="bg-primary/5 border-primary/20">
+        <AlertCircle className="h-4 w-4 text-primary" />
+        <AlertDescription className="text-foreground">
+          <strong>100% Free OCR</strong> - No signup required! Just upload an image and extract text instantly. 
+          {!puterLoaded && " Loading OCR service..."}
+        </AlertDescription>
+      </Alert>
       
       <Card className="shadow-elegant border-border/50">
         <CardContent className="p-6">
@@ -254,15 +253,18 @@ export const OCRScanner = () => {
       )}
 
       {extractedText && (
-        <Card className="shadow-elegant border-border/50 animate-in fade-in slide-in-from-bottom-4 duration-500">
+        <Card className="shadow-elegant border-primary/30 animate-in fade-in slide-in-from-bottom-4 duration-500">
           <CardContent className="p-6">
             <div className="flex justify-between items-center mb-4">
-              <h3 className="text-lg font-semibold">Extracted Text</h3>
+              <div>
+                <h3 className="text-xl font-bold text-primary mb-1">✓ Text Extracted Successfully</h3>
+                <p className="text-sm text-muted-foreground">Your OCR results are ready</p>
+              </div>
               <Button
-                variant="outline"
+                variant="default"
                 size="sm"
                 onClick={copyToClipboard}
-                className="gap-2"
+                className="gap-2 gradient-primary shadow-glow"
               >
                 {copied ? (
                   <>
@@ -272,13 +274,13 @@ export const OCRScanner = () => {
                 ) : (
                   <>
                     <Copy className="w-4 h-4" />
-                    Copy
+                    Copy Text
                   </>
                 )}
               </Button>
             </div>
-            <div className="bg-muted rounded-lg p-6 min-h-[200px] max-h-[600px] overflow-y-auto">
-              <pre className="whitespace-pre-wrap break-words font-mono text-base leading-relaxed">
+            <div className="bg-background border border-border rounded-lg p-6 min-h-[200px] max-h-[600px] overflow-y-auto shadow-inner">
+              <pre className="whitespace-pre-wrap break-words font-mono text-base leading-relaxed text-foreground">
                 {extractedText}
               </pre>
             </div>
