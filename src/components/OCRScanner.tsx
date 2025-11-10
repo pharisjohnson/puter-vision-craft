@@ -1,10 +1,16 @@
 import { useState, useCallback, useEffect } from "react";
-import { Upload, Link as LinkIcon, Copy, CheckCheck, Loader2, X, AlertCircle } from "lucide-react";
+import { Upload, Link as LinkIcon, Copy, CheckCheck, Loader2, X, AlertCircle, Download, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
 import { toast } from "sonner";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 declare global {
   interface Window {
@@ -16,15 +22,21 @@ declare global {
   }
 }
 
+type ImageData = {
+  id: string;
+  file?: File;
+  url?: string;
+  previewUrl: string;
+  extractedText: string;
+  isProcessing: boolean;
+  name: string;
+};
+
 export const OCRScanner = () => {
-  const [imageUrl, setImageUrl] = useState("");
-  const [imageFile, setImageFile] = useState<File | null>(null);
-  const [previewUrl, setPreviewUrl] = useState<string>("");
-  const [extractedText, setExtractedText] = useState("");
-  const [isProcessing, setIsProcessing] = useState(false);
-  const [copied, setCopied] = useState(false);
+  const [images, setImages] = useState<ImageData[]>([]);
   const [dragActive, setDragActive] = useState(false);
   const [puterLoaded, setPuterLoaded] = useState(false);
+  const [copied, setCopied] = useState(false);
 
   useEffect(() => {
     // Check if puter is loaded
@@ -55,34 +67,52 @@ export const OCRScanner = () => {
     e.stopPropagation();
     setDragActive(false);
 
-    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
-      const file = e.dataTransfer.files[0];
-      if (file.type.startsWith("image/")) {
-        setImageFile(file);
-        setImageUrl("");
-        setPreviewUrl(URL.createObjectURL(file));
-        setExtractedText("");
-      } else {
-        toast.error("Please upload an image file");
+    if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+      const files = Array.from(e.dataTransfer.files).filter(f => f.type.startsWith("image/"));
+      if (files.length === 0) {
+        toast.error("Please upload image files only");
+        return;
       }
+      addImages(files);
     }
   }, []);
 
+  const addImages = (files: File[]) => {
+    const newImages: ImageData[] = files.map(file => ({
+      id: crypto.randomUUID(),
+      file,
+      previewUrl: URL.createObjectURL(file),
+      extractedText: "",
+      isProcessing: false,
+      name: file.name,
+    }));
+    setImages(prev => [...prev, ...newImages]);
+    toast.success(`Added ${files.length} image${files.length > 1 ? 's' : ''}`);
+  };
+
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-      const file = e.target.files[0];
-      setImageFile(file);
-      setImageUrl("");
-      setPreviewUrl(URL.createObjectURL(file));
-      setExtractedText("");
+    if (e.target.files && e.target.files.length > 0) {
+      const files = Array.from(e.target.files);
+      addImages(files);
     }
   };
 
-  const handleUrlChange = (url: string) => {
-    setImageUrl(url);
-    setImageFile(null);
-    setPreviewUrl(url);
-    setExtractedText("");
+  const addImageFromUrl = (url: string) => {
+    if (!url.trim()) return;
+    const newImage: ImageData = {
+      id: crypto.randomUUID(),
+      url: url.trim(),
+      previewUrl: url.trim(),
+      extractedText: "",
+      isProcessing: false,
+      name: "Image from URL",
+    };
+    setImages(prev => [...prev, newImage]);
+    toast.success("Added image from URL");
+  };
+
+  const removeImage = (id: string) => {
+    setImages(prev => prev.filter(img => img.id !== id));
   };
 
   const fileToDataURL = (file: File) => new Promise<string>((resolve, reject) => {
@@ -92,9 +122,31 @@ export const OCRScanner = () => {
     reader.readAsDataURL(file);
   });
 
-  const extractText = async () => {
-    if (!imageFile && !imageUrl) {
-      toast.error("Please upload an image or enter an image URL");
+  const extractTextFromImage = async (imageData: ImageData): Promise<string> => {
+    if (!puterLoaded || !window.puter || !window.puter.ai) {
+      throw new Error("OCR service not ready");
+    }
+
+    let text = "";
+    if (imageData.file) {
+      try {
+        console.log("Attempting OCR with File object:", imageData.name);
+        text = await window.puter.ai.img2txt(imageData.file);
+      } catch (err1) {
+        console.warn("Direct File OCR failed, retrying with Data URL...", err1);
+        const dataUrl = await fileToDataURL(imageData.file);
+        text = await window.puter.ai.img2txt(dataUrl);
+      }
+    } else if (imageData.url) {
+      console.log("Attempting OCR with URL", imageData.url);
+      text = await window.puter.ai.img2txt(imageData.url);
+    }
+    return text || "No text found in image";
+  };
+
+  const extractAllText = async () => {
+    if (images.length === 0) {
+      toast.error("Please add at least one image");
       return;
     }
 
@@ -103,50 +155,72 @@ export const OCRScanner = () => {
       return;
     }
 
-    setIsProcessing(true);
-    console.log("Starting OCR extraction...", { hasFile: !!imageFile, hasUrl: !!imageUrl });
-    
-    try {
-      let text = "";
-      if (imageFile) {
-        try {
-          console.log("Attempting OCR with File object");
-          text = await window.puter.ai.img2txt(imageFile);
-        } catch (err1) {
-          console.warn("Direct File OCR failed, retrying with Data URL...", err1);
-          const dataUrl = await fileToDataURL(imageFile);
-          text = await window.puter.ai.img2txt(dataUrl);
-        }
-      } else {
-        const url = imageUrl.trim();
-        console.log("Attempting OCR with URL", url);
-        text = await window.puter.ai.img2txt(url);
-      }
+    const totalImages = images.length;
+    let completed = 0;
 
-      console.log("OCR result:", text);
-      setExtractedText(text || "No text found in image");
-      toast.success("Text extracted successfully!");
-    } catch (error) {
-      console.error("OCR Error details (after retries):", error);
-      const errorMessage = typeof error === "string" ? error : (error instanceof Error ? error.message : JSON.stringify(error));
-      toast.error(`Failed to extract text: ${errorMessage}`);
-    } finally {
-      setIsProcessing(false);
+    for (const image of images) {
+      setImages(prev => prev.map(img => 
+        img.id === image.id ? { ...img, isProcessing: true } : img
+      ));
+
+      try {
+        const text = await extractTextFromImage(image);
+        setImages(prev => prev.map(img =>
+          img.id === image.id ? { ...img, extractedText: text, isProcessing: false } : img
+        ));
+        completed++;
+        toast.success(`Processed ${completed}/${totalImages}`);
+      } catch (error) {
+        console.error("OCR Error for", image.name, error);
+        const errorMessage = typeof error === "string" ? error : (error instanceof Error ? error.message : "Unknown error");
+        setImages(prev => prev.map(img =>
+          img.id === image.id ? { ...img, extractedText: `Error: ${errorMessage}`, isProcessing: false } : img
+        ));
+      }
     }
+
+    toast.success("All images processed!");
   };
 
-  const copyToClipboard = () => {
-    navigator.clipboard.writeText(extractedText);
+  const getAllExtractedText = () => {
+    return images
+      .filter(img => img.extractedText)
+      .map(img => `=== ${img.name} ===\n\n${img.extractedText}`)
+      .join("\n\n---\n\n");
+  };
+
+  const copyAllToClipboard = () => {
+    const allText = getAllExtractedText();
+    if (!allText) {
+      toast.error("No text to copy");
+      return;
+    }
+    navigator.clipboard.writeText(allText);
     setCopied(true);
-    toast.success("Copied to clipboard!");
+    toast.success("All text copied to clipboard!");
     setTimeout(() => setCopied(false), 2000);
   };
 
+  const downloadAllAsText = () => {
+    const allText = getAllExtractedText();
+    if (!allText) {
+      toast.error("No text to download");
+      return;
+    }
+    const blob = new Blob([allText], { type: "text/plain" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `ocr-results-${Date.now()}.txt`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    toast.success("Downloaded successfully!");
+  };
+
   const clearAll = () => {
-    setImageUrl("");
-    setImageFile(null);
-    setPreviewUrl("");
-    setExtractedText("");
+    setImages([]);
   };
 
   return (
@@ -176,6 +250,7 @@ export const OCRScanner = () => {
               <input
                 type="file"
                 accept="image/*"
+                multiple
                 onChange={handleFileChange}
                 className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
                 id="file-upload"
@@ -186,10 +261,10 @@ export const OCRScanner = () => {
               >
                 <Upload className="w-12 h-12 mb-4 text-primary" />
                 <p className="text-lg font-medium mb-1">
-                  Drop your image here or click to upload
+                  Drop multiple images here or click to upload
                 </p>
                 <p className="text-sm text-muted-foreground">
-                  Supports JPG, PNG, WEBP
+                  Supports JPG, PNG, WEBP • Upload multiple files at once
                 </p>
               </label>
             </div>
@@ -206,82 +281,139 @@ export const OCRScanner = () => {
                 <Input
                   type="url"
                   placeholder="Paste image URL here..."
-                  value={imageUrl}
-                  onChange={(e) => handleUrlChange(e.target.value)}
                   className="pl-10"
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      addImageFromUrl(e.currentTarget.value);
+                      e.currentTarget.value = "";
+                    }
+                  }}
                 />
               </div>
+              <Button
+                variant="outline"
+                onClick={(e) => {
+                  const input = e.currentTarget.previousElementSibling?.querySelector("input") as HTMLInputElement;
+                  if (input) {
+                    addImageFromUrl(input.value);
+                    input.value = "";
+                  }
+                }}
+              >
+                Add
+              </Button>
             </div>
           </div>
         </CardContent>
       </Card>
 
-      {previewUrl && (
-        <Card className="shadow-elegant border-border/50 overflow-hidden">
+      {images.length > 0 && (
+        <Card className="shadow-elegant border-border/50">
           <CardContent className="p-6">
             <div className="flex justify-between items-center mb-4">
-              <h3 className="text-lg font-semibold">Image Preview</h3>
-              <Button variant="ghost" size="sm" onClick={clearAll}>
-                <X className="w-4 h-4 mr-2" />
-                Clear
-              </Button>
+              <div>
+                <h3 className="text-lg font-semibold">Images ({images.length})</h3>
+                <p className="text-sm text-muted-foreground">Ready to extract text</p>
+              </div>
+              <div className="flex gap-2">
+                <Button
+                  onClick={extractAllText}
+                  disabled={!puterLoaded || images.some(img => img.isProcessing)}
+                  className="gradient-primary shadow-glow"
+                >
+                  {images.some(img => img.isProcessing) ? (
+                    <>
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      Processing...
+                    </>
+                  ) : (
+                    "Extract All Text"
+                  )}
+                </Button>
+                <Button variant="ghost" size="sm" onClick={clearAll}>
+                  <Trash2 className="w-4 h-4 mr-2" />
+                  Clear All
+                </Button>
+              </div>
             </div>
-            <div className="relative rounded-lg overflow-hidden bg-muted">
-              <img
-                src={previewUrl}
-                alt="Preview"
-                className="w-full h-auto max-h-96 object-contain"
-              />
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {images.map((image) => (
+                <div key={image.id} className="relative group">
+                  <div className="relative rounded-lg overflow-hidden bg-muted border border-border">
+                    <img
+                      src={image.previewUrl}
+                      alt={image.name}
+                      className="w-full h-48 object-cover"
+                    />
+                    {image.isProcessing && (
+                      <div className="absolute inset-0 bg-background/80 flex items-center justify-center">
+                        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+                      </div>
+                    )}
+                    <Button
+                      variant="destructive"
+                      size="icon"
+                      className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity"
+                      onClick={() => removeImage(image.id)}
+                    >
+                      <X className="w-4 h-4" />
+                    </Button>
+                  </div>
+                  <p className="text-sm text-muted-foreground mt-2 truncate">{image.name}</p>
+                  {image.extractedText && !image.isProcessing && (
+                    <div className="mt-2 p-2 bg-primary/5 rounded border border-primary/20">
+                      <p className="text-xs text-muted-foreground line-clamp-2">{image.extractedText}</p>
+                    </div>
+                  )}
+                </div>
+              ))}
             </div>
-            <Button
-              onClick={extractText}
-              disabled={isProcessing || !puterLoaded}
-              className="w-full mt-4 gradient-primary shadow-glow"
-              size="lg"
-            >
-              {isProcessing ? (
-                <>
-                  <Loader2 className="w-5 h-5 mr-2 animate-spin" />
-                  Processing...
-                </>
-              ) : (
-                "Extract Text"
-              )}
-            </Button>
           </CardContent>
         </Card>
       )}
 
-      {extractedText && (
+      {images.some(img => img.extractedText) && (
         <Card className="shadow-elegant border-primary/30 animate-in fade-in slide-in-from-bottom-4 duration-500">
           <CardContent className="p-6">
             <div className="flex justify-between items-center mb-4">
               <div>
                 <h3 className="text-xl font-bold text-primary mb-1">✓ Text Extracted Successfully</h3>
-                <p className="text-sm text-muted-foreground">Your OCR results are ready</p>
+                <p className="text-sm text-muted-foreground">
+                  {images.filter(img => img.extractedText).length} of {images.length} images processed
+                </p>
               </div>
-              <Button
-                variant="default"
-                size="sm"
-                onClick={copyToClipboard}
-                className="gap-2 gradient-primary shadow-glow"
-              >
-                {copied ? (
-                  <>
-                    <CheckCheck className="w-4 h-4" />
-                    Copied!
-                  </>
-                ) : (
-                  <>
-                    <Copy className="w-4 h-4" />
-                    Copy Text
-                  </>
-                )}
-              </Button>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="default" size="sm" className="gap-2 gradient-primary shadow-glow">
+                    {copied ? (
+                      <>
+                        <CheckCheck className="w-4 h-4" />
+                        Copied!
+                      </>
+                    ) : (
+                      <>
+                        <Download className="w-4 h-4" />
+                        Export
+                      </>
+                    )}
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem onClick={copyAllToClipboard}>
+                    <Copy className="w-4 h-4 mr-2" />
+                    Copy All Text
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={downloadAllAsText}>
+                    <Download className="w-4 h-4 mr-2" />
+                    Download as TXT
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             </div>
             <div className="bg-background border border-border rounded-lg p-6 min-h-[200px] max-h-[600px] overflow-y-auto shadow-inner">
               <pre className="whitespace-pre-wrap break-words font-mono text-base leading-relaxed text-foreground">
-                {extractedText}
+                {getAllExtractedText()}
               </pre>
             </div>
           </CardContent>
