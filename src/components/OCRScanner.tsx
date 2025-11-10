@@ -277,8 +277,10 @@ export const OCRScanner = () => {
                 )}
               </Button>
             </div>
-            <div className="bg-muted rounded-lg p-4 min-h-[200px] whitespace-pre-wrap font-mono text-sm">
-              {extractedText}
+            <div className="bg-muted rounded-lg p-6 min-h-[200px] max-h-[600px] overflow-y-auto">
+              <pre className="whitespace-pre-wrap break-words font-mono text-base leading-relaxed">
+                {extractedText}
+              </pre>
             </div>
           </CardContent>
         </Card>
