@@ -11,7 +11,7 @@ const Index = () => {
             <div className="p-2 rounded-lg gradient-primary shadow-glow">
               <ScanText className="w-6 h-6 text-white" />
             </div>
-            <h1 className="text-2xl font-bold">OCR Scanner</h1>
+            <h1 className="text-2xl font-bold">Free OCR Scanner</h1>
           </div>
         </div>
       </header>
@@ -24,7 +24,7 @@ const Index = () => {
               alt="OCR Scanner - Extract text from images"
               className="w-full h-48 object-cover"
             />
-            <div className="absolute inset-0 bg-gradient-to-t from-background/90 to-transparent flex items-end justify-center pb-6">
+            <div className="absolute inset-0 bg-gradient-to-t from-background via-background/80 to-background/60 flex items-end justify-center pb-6">
               <div className="text-white">
                 <h2 className="text-3xl font-bold mb-2">Extract Text from Images</h2>
                 <p className="text-lg opacity-90">Free, unlimited OCR powered by AI</p>
