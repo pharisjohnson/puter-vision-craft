@@ -25,9 +25,9 @@ const Index = () => {
               className="w-full h-48 object-cover"
             />
             <div className="absolute inset-0 bg-gradient-to-t from-background via-background/80 to-background/60 flex items-end justify-center pb-6">
-              <div className="text-white">
-                <h2 className="text-3xl font-bold mb-2">Extract Text from Images</h2>
-                <p className="text-lg opacity-90">Free, unlimited OCR powered by AI</p>
+              <div>
+                <h2 className="text-3xl font-bold mb-2 text-[#131A39]">Extract Text from Images</h2>
+                <p className="text-lg text-[#131A39]">Free, unlimited OCR powered by AI</p>
               </div>
             </div>
           </div>
