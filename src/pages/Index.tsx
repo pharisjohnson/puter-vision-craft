@@ -1,6 +1,6 @@
 import { OCRScanner } from "@/components/OCRScanner";
 import { ScanText } from "lucide-react";
-import heroImage from "@/assets/ocr-hero.jpg";
+import heroImage from "@/assets/ocr-hero-phone.jpg";
 
 const Index = () => {
   return (
@@ -41,7 +41,18 @@ const Index = () => {
         <OCRScanner />
 
         <footer className="mt-16 pt-8 border-t border-border/50 text-center text-sm text-muted-foreground">
-          <p>Powered by Puter.js OCR API • Free & Unlimited</p>
+          <p>
+            Powered by{" "}
+            <a
+              href="https://noonstudio.africa/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-primary hover:underline font-medium"
+            >
+              Noon Studio Africa
+            </a>
+            {" "}• Free & Unlimited
+          </p>
         </footer>
       </main>
     </div>
