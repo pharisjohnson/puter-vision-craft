@@ -1,5 +1,5 @@
 import { OCRScanner } from "@/components/OCRScanner";
-import { ScanText } from "lucide-react";
+import { ScanText, Globe, FileType, FileOutput } from "lucide-react";
 import heroImage from "@/assets/ocr-hero-phone.jpg";
 
 const Index = () => {
@@ -36,6 +36,39 @@ const Index = () => {
             Upload images or paste URLs to instantly extract text using advanced optical character recognition.
             Perfect for digitizing documents, receipts, business cards, and handwritten notes.
           </p>
+        </div>
+
+        {/* Features Section */}
+        <div className="grid md:grid-cols-3 gap-6 mb-12">
+          <div className="bg-card border border-border/50 rounded-xl p-6 text-center hover:shadow-elegant transition-shadow">
+            <div className="w-12 h-12 mx-auto mb-4 rounded-lg gradient-primary flex items-center justify-center shadow-glow">
+              <Globe className="w-6 h-6 text-white" />
+            </div>
+            <h3 className="font-semibold text-lg mb-2">46 Languages</h3>
+            <p className="text-sm text-muted-foreground">
+              Extract text in 46 different languages including English, Spanish, French, German, Chinese, Japanese, and more.
+            </p>
+          </div>
+
+          <div className="bg-card border border-border/50 rounded-xl p-6 text-center hover:shadow-elegant transition-shadow">
+            <div className="w-12 h-12 mx-auto mb-4 rounded-lg gradient-primary flex items-center justify-center shadow-glow">
+              <FileType className="w-6 h-6 text-white" />
+            </div>
+            <h3 className="font-semibold text-lg mb-2">Multiple Input Formats</h3>
+            <p className="text-sm text-muted-foreground">
+              Supports PDF, TIF, JPEG, BMP, PCX, PNG, and GIF files for maximum flexibility.
+            </p>
+          </div>
+
+          <div className="bg-card border border-border/50 rounded-xl p-6 text-center hover:shadow-elegant transition-shadow">
+            <div className="w-12 h-12 mx-auto mb-4 rounded-lg gradient-primary flex items-center justify-center shadow-glow">
+              <FileOutput className="w-6 h-6 text-white" />
+            </div>
+            <h3 className="font-semibold text-lg mb-2">Flexible Output</h3>
+            <p className="text-sm text-muted-foreground">
+              Export your extracted text to PDF, DOC, XLS, RTF, or TXT formats.
+            </p>
+          </div>
         </div>
 
         <OCRScanner />
