@@ -1,17 +1,27 @@
 import { OCRScanner } from "@/components/OCRScanner";
-import { ScanText, Globe, FileType, FileOutput } from "lucide-react";
+import { ScanText, Globe, FileType, FileOutput, Code } from "lucide-react";
+import { Link } from "react-router-dom";
 import heroImage from "@/assets/ocr-hero-phone.jpg";
+import { Button } from "@/components/ui/button";
 
 const Index = () => {
   return (
     <div className="min-h-screen">
       <header className="border-b border-border/50 bg-card/50 backdrop-blur-sm sticky top-0 z-10">
         <div className="container mx-auto px-4 py-4">
-          <div className="flex items-center gap-3">
-            <div className="p-2 rounded-lg gradient-primary shadow-glow">
-              <ScanText className="w-6 h-6 text-white" />
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="p-2 rounded-lg gradient-primary shadow-glow">
+                <ScanText className="w-6 h-6 text-white" />
+              </div>
+              <h1 className="text-2xl font-bold">Free OCR Scanner</h1>
             </div>
-            <h1 className="text-2xl font-bold">Free OCR Scanner</h1>
+            <Link to="/docs">
+              <Button variant="outline" size="sm" className="gap-2">
+                <Code className="w-4 h-4" />
+                Developer Docs
+              </Button>
+            </Link>
           </div>
         </div>
       </header>
