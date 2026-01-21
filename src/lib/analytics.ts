@@ -1,8 +1,7 @@
 import posthog from 'posthog-js';
 
 // PostHog configuration
-// Replace with your actual PostHog API key from https://posthog.com
-const POSTHOG_API_KEY = 'phc_REPLACE_WITH_YOUR_API_KEY';
+const POSTHOG_API_KEY = 'phx_PKiXdKqSxRoCtKi6AEXB9IjkjZsIq3558KHEwnOdUVL9RTQ';
 const POSTHOG_HOST = 'https://app.posthog.com';
 
 export const initAnalytics = () => {
