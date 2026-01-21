@@ -6,6 +6,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { toast } from "sonner";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { trackOCREvent } from "@/lib/analytics";
+import { incrementStat } from "@/pages/Admin";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -89,6 +90,7 @@ export const OCRScanner = () => {
     }));
     setImages(prev => [...prev, ...newImages]);
     trackOCREvent.imageUploaded(files.length, 'file');
+    incrementStat('imagesUploaded');
     toast.success(`Added ${files.length} image${files.length > 1 ? 's' : ''}`);
   };
 
@@ -111,6 +113,7 @@ export const OCRScanner = () => {
     };
     setImages(prev => [...prev, newImage]);
     trackOCREvent.imageUploaded(1, 'url');
+    incrementStat('imagesUploaded');
     toast.success("Added image from URL");
   };
 
@@ -183,6 +186,7 @@ export const OCRScanner = () => {
     }
 
     trackOCREvent.textExtracted(images.length, true);
+    incrementStat('textsExtracted');
     toast.success("All images processed!");
   };
 
@@ -202,6 +206,7 @@ export const OCRScanner = () => {
     navigator.clipboard.writeText(allText);
     setCopied(true);
     trackOCREvent.textCopied(allText.length);
+    incrementStat('textsCopied');
     toast.success("All text copied to clipboard!");
     setTimeout(() => setCopied(false), 2000);
   };
@@ -222,6 +227,7 @@ export const OCRScanner = () => {
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
     trackOCREvent.textDownloaded(allText.length);
+    incrementStat('textsDownloaded');
     toast.success("Downloaded successfully!");
   };
 
