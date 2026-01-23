@@ -196,12 +196,39 @@ export const OCRScanner = () => {
     
     return paragraphs
       .map(paragraph => {
-        // Join single newlines (word-per-line OCR output) into flowing sentences
-        return paragraph
+        // Join single newlines (word-per-line OCR output) into flowing text
+        const words = paragraph
           .split('\n')
           .map(line => line.trim())
-          .filter(line => line.length > 0)
-          .join(' ');
+          .filter(line => line.length > 0);
+        
+        // Smart joining: don't add space before punctuation or after sentence-ending punctuation
+        let result = '';
+        for (let i = 0; i < words.length; i++) {
+          const word = words[i];
+          const prevWord = i > 0 ? words[i - 1] : '';
+          
+          // Check if current word starts with punctuation that should attach to previous word
+          const startsWithPunctuation = /^[.,!?;:'")\]}>]/.test(word);
+          // Check if previous word ended with sentence-ending punctuation
+          const prevEndedSentence = /[.!?]$/.test(prevWord);
+          // Check if current word is just punctuation
+          const isPunctuationOnly = /^[.,!?;:'"()\[\]{}<>]+$/.test(word);
+          
+          if (i === 0) {
+            result = word;
+          } else if (startsWithPunctuation || isPunctuationOnly) {
+            // Attach punctuation directly to previous word
+            result += word;
+          } else if (prevEndedSentence) {
+            // Add double space after sentence endings for readability
+            result += '  ' + word;
+          } else {
+            result += ' ' + word;
+          }
+        }
+        
+        return result;
       })
       .filter(p => p.length > 0)
       .join('\n\n');
