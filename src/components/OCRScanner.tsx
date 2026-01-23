@@ -190,10 +190,27 @@ export const OCRScanner = () => {
     toast.success("All images processed!");
   };
 
+  const formatTextAsParagraphs = (text: string) => {
+    // Split by multiple newlines to detect paragraph breaks
+    const paragraphs = text.split(/\n{2,}/);
+    
+    return paragraphs
+      .map(paragraph => {
+        // Join single newlines (word-per-line OCR output) into flowing sentences
+        return paragraph
+          .split('\n')
+          .map(line => line.trim())
+          .filter(line => line.length > 0)
+          .join(' ');
+      })
+      .filter(p => p.length > 0)
+      .join('\n\n');
+  };
+
   const getAllExtractedText = () => {
     return images
       .filter(img => img.extractedText)
-      .map(img => `=== ${img.name} ===\n\n${img.extractedText}`)
+      .map(img => `=== ${img.name} ===\n\n${formatTextAsParagraphs(img.extractedText)}`)
       .join("\n\n---\n\n");
   };
 
@@ -424,9 +441,13 @@ export const OCRScanner = () => {
               </DropdownMenu>
             </div>
             <div className="bg-background border border-border rounded-lg p-6 min-h-[200px] max-h-[600px] overflow-y-auto shadow-inner">
-              <pre className="whitespace-pre-wrap break-words font-mono text-base leading-relaxed text-foreground">
-                {getAllExtractedText()}
-              </pre>
+              <div className="text-base leading-relaxed text-foreground space-y-4">
+                {getAllExtractedText().split('\n\n').map((paragraph, index) => (
+                  <p key={index} className={paragraph.startsWith('===') || paragraph === '---' ? 'font-semibold text-primary' : ''}>
+                    {paragraph}
+                  </p>
+                ))}
+              </div>
             </div>
           </CardContent>
         </Card>
